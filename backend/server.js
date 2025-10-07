@@ -15,6 +15,11 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/booked-services", bookedServiceRoutes);
 
+// Root route for testing
+app.get("/", (req, res) => {
+  res.send("Server is working ✅");
+});
+
 // Connect to MongoDB Atlas
 mongoose
   .connect(process.env.MONGO_URI, {
