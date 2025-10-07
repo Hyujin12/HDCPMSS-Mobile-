@@ -4,13 +4,13 @@ const sendVerificationEmail = async (email, code) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'eugenedianito@gmail.com', // MUST MATCH sender below
-      pass: 'djzhnohsceabsofd', // ✅ App password from Google
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS,
     },
   });
 
   const mailOptions = {
-    from: '"Halili Dental Clinic" <eugenedianito@gmail.com>', // MUST match auth.user
+    from: `"Halili Dental Clinic" <${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Email Verification Code',
     html: `<p>Your verification code is: <strong>${code}</strong></p>`,
