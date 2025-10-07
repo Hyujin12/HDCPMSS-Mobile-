@@ -24,7 +24,7 @@
     "expo-notifications": "~0.31.4",
     "expo-status-bar": "~2.2.3",
     "express": "^5.1.0",
-    "mongoose": "^8.15.1",
+    "mongoose": "^8.19.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.3",
