@@ -1,16 +1,11 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "type": "module",
-  "main": "index.js",
+  "main": "server.js",
+  "type": "commonjs",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
