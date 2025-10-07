@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons'; // or react-native-vector-icons
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import { useCallback, useEffect, useState } from 'react';
@@ -20,7 +20,9 @@ import {
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Custom SweetAlert-like Modal Component
+// Set your backend URL here
+const API_BASE_URL = 'https://hdcpmss-mobile-1.onrender.com';
+
 const CustomAlert = ({ visible, type, title, message, onConfirm, onCancel, showCancel = false }) => {
   const [scaleAnim] = useState(new Animated.Value(0));
 
@@ -98,7 +100,6 @@ const RegisterScreen = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Alert state
   const [alertConfig, setAlertConfig] = useState({
     visible: false,
     type: 'info',
@@ -121,65 +122,34 @@ const RegisterScreen = () => {
     });
   };
 
-  const hideAlert = () => {
-    setAlertConfig(prev => ({ ...prev, visible: false }));
-  };
+  const hideAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
 
   const handleInputChange = useCallback((field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: '' }));
-    }
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   }, [errors]);
 
   const validateForm = () => {
     const newErrors = {};
     const { username, email, mobileNumber, password, confirmPassword } = formData;
 
-    // Username validation
-    if (!username.trim()) {
-      newErrors.username = 'Username is required';
-    } else if (username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-      newErrors.username = 'Username can only contain letters, numbers, and underscores';
-    }
+    if (!username.trim()) newErrors.username = 'Username is required';
+    else if (username.length < 3) newErrors.username = 'Username must be at least 3 characters';
+    else if (!/^[a-zA-Z0-9_]+$/.test(username)) newErrors.username = 'Username can only contain letters, numbers, and underscores';
 
-    // Email validation
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        newErrors.email = 'Please enter a valid email address';
-      }
-    }
+    if (!email.trim()) newErrors.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Please enter a valid email address';
 
-    // Mobile number validation
-    if (!mobileNumber.trim()) {
-      newErrors.mobileNumber = 'Mobile number is required';
-    } else if (mobileNumber.length < 10) {
-      newErrors.mobileNumber = 'Mobile number must be at least 10 digits';
-    } else if (mobileNumber.length > 15) {
-      newErrors.mobileNumber = 'Mobile number cannot exceed 15 digits';
-    }
+    if (!mobileNumber.trim()) newErrors.mobileNumber = 'Mobile number is required';
+    else if (mobileNumber.length < 10) newErrors.mobileNumber = 'Mobile number must be at least 10 digits';
+    else if (mobileNumber.length > 15) newErrors.mobileNumber = 'Mobile number cannot exceed 15 digits';
 
-    // Password validation
-    if (!password) {
-      newErrors.password = 'Password is required';
-    } else if (password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-      newErrors.password = 'Password must contain uppercase, lowercase, and number';
-    }
+    if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 8) newErrors.password = 'Password must be at least 8 characters';
+    else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) newErrors.password = 'Password must contain uppercase, lowercase, and number';
 
-    // Confirm password validation
-    if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
-    } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
-    }
+    if (!confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
+    else if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -187,11 +157,7 @@ const RegisterScreen = () => {
 
   const handleRegister = async () => {
     if (!validateForm()) {
-      showAlert({
-        type: 'error',
-        title: 'Validation Error',
-        message: 'Please fix the errors in the form before proceeding.',
-      });
+      showAlert({ type: 'error', title: 'Validation Error', message: 'Please fix the errors in the form before proceeding.' });
       return;
     }
 
@@ -200,92 +166,54 @@ const RegisterScreen = () => {
 
     try {
       const response = await axios.post(
-        'http://192.168.0.101:3000/api/users/register',
-        {
-          username: username.trim(),
-          email: email.trim().toLowerCase(),
-          mobileNumber: mobileNumber.trim(),
-          password,
-        },
-        {
-          timeout: 10000, // 10 second timeout
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
+        `${API_BASE_URL}/api/users/register`,
+        { username: username.trim(), email: email.trim().toLowerCase(), mobileNumber: mobileNumber.trim(), password },
+        { timeout: 10000, headers: { 'Content-Type': 'application/json' } }
       );
-
-      console.log('Registration successful:', response.data);
 
       if (response.data.userId) {
         showAlert({
           type: 'success',
           title: 'Registration Successful!',
-          message: 'A verification email has been sent to your email address. Please check your inbox and follow the instructions to verify your account.',
+          message: 'A verification email has been sent to your email address.',
           onConfirm: () => {
             hideAlert();
-            navigation.navigate('Verify', { 
-              userId: response.data.userId,
-              email: email.trim().toLowerCase() 
-            });
+            navigation.navigate('Verify', { userId: response.data.userId, email: email.trim().toLowerCase() });
           },
         });
-      } else {
-        throw new Error('Invalid response from server');
-      }
+      } else throw new Error('Invalid response from server');
     } catch (error) {
-      console.error('Registration error:', error);
-      
       let errorMessage = 'Registration failed. Please try again.';
       let errorTitle = 'Registration Failed';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 409) {
-        errorMessage = 'An account with this username or email already exists. Please use different credentials or sign in instead.';
+
+      if (error.response?.data?.message) errorMessage = error.response.data.message;
+      else if (error.response?.status === 409) {
+        errorMessage = 'An account with this username or email already exists.';
         errorTitle = 'Account Already Exists';
       } else if (error.code === 'ECONNABORTED') {
-        errorMessage = 'The request took too long to complete. Please check your internet connection and try again.';
+        errorMessage = 'The request took too long. Check your internet connection.';
         errorTitle = 'Connection Timeout';
       } else if (!error.response) {
-        errorMessage = 'Unable to connect to the server. Please check your internet connection and try again.';
+        errorMessage = 'Unable to connect to the server. Please check your internet connection.';
         errorTitle = 'Network Error';
       }
 
-      showAlert({
-        type: 'error',
-        title: errorTitle,
-        message: errorMessage,
-      });
+      showAlert({ type: 'error', title: errorTitle, message: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleLogin = () => {
-    navigation.navigate('Login');
-  };
+  const handleLogin = () => navigation.navigate('Login');
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
+    <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.container}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Image
-                source={require('../assets/halili logo.png')}
-                style={styles.logo}
-                resizeMode="contain"
-              />
+              <Image source={require('../assets/halili logo.png')} style={styles.logo} resizeMode="contain" />
             </View>
             <Text style={styles.clinicName}>Halili's Dental Clinic</Text>
             <Text style={styles.tagline}>Sa Halili Ikaw Mapapangiti</Text>
@@ -293,123 +221,23 @@ const RegisterScreen = () => {
 
           {/* Form */}
           <View style={styles.formContainer}>
-            <InputField
-              label="Username"
-              value={formData.username}
-              onChangeText={(value) => handleInputChange('username', value)}
-              placeholder="Enter username"
-              error={errors.username}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <InputField label="Username" value={formData.username} onChangeText={v => handleInputChange('username', v)} placeholder="Enter username" error={errors.username} autoCapitalize="none" />
+            <InputField label="Email" value={formData.email} onChangeText={v => handleInputChange('email', v)} placeholder="Enter email" keyboardType="email-address" autoCapitalize="none" error={errors.email} style={styles.fieldSpacing} />
+            <InputField label="Mobile Number" value={formData.mobileNumber} onChangeText={v => handleInputChange('mobileNumber', v.replace(/[^0-9]/g, ''))} placeholder="Enter mobile number" keyboardType="numeric" error={errors.mobileNumber} style={styles.fieldSpacing} maxLength={15} />
+            <InputField label="Password" value={formData.password} onChangeText={v => handleInputChange('password', v)} placeholder="Enter password" secureTextEntry={!showPassword} error={errors.password} style={styles.fieldSpacing} rightIcon={<TouchableOpacity onPress={() => setShowPassword(!showPassword)}><Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#666" /></TouchableOpacity>} />
+            <InputField label="Confirm Password" value={formData.confirmPassword} onChangeText={v => handleInputChange('confirmPassword', v)} placeholder="Confirm password" secureTextEntry={!showConfirmPassword} error={errors.confirmPassword} style={styles.fieldSpacing} rightIcon={<TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}><Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color="#666" /></TouchableOpacity>} />
 
-            <InputField
-              label="Email"
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              placeholder="Enter email address"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              error={errors.email}
-              style={styles.fieldSpacing}
-            />
-
-            <InputField
-              label="Mobile Number"
-              value={formData.mobileNumber}
-              onChangeText={(value) => {
-                const sanitizedValue = value.replace(/[^0-9]/g, '');
-                if (sanitizedValue.length <= 15) {
-                  handleInputChange('mobileNumber', sanitizedValue);
-                }
-              }}
-              placeholder="Enter mobile number"
-              keyboardType="numeric"
-              error={errors.mobileNumber}
-              style={styles.fieldSpacing}
-              maxLength={15}
-            />
-
-            <InputField
-              label="Password"
-              value={formData.password}
-              onChangeText={(value) => handleInputChange('password', value)}
-              placeholder="Enter password"
-              secureTextEntry={!showPassword}
-              error={errors.password}
-              style={styles.fieldSpacing}
-              rightIcon={
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color="#666"
-                  />
-                </TouchableOpacity>
-              }
-            />
-
-            <InputField
-              label="Confirm Password"
-              value={formData.confirmPassword}
-              onChangeText={(value) => handleInputChange('confirmPassword', value)}
-              placeholder="Confirm password"
-              secureTextEntry={!showConfirmPassword}
-              error={errors.confirmPassword}
-              style={styles.fieldSpacing}
-              rightIcon={
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.eyeIcon}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons
-                    name={showConfirmPassword ? 'eye-off' : 'eye'}
-                    size={20}
-                    color="#666"
-                  />
-                </TouchableOpacity>
-              }
-            />
-
-            <ActionButton
-              title={isLoading ? 'Creating Account...' : 'Register'}
-              onPress={handleRegister}
-              variant="primary"
-              style={styles.registerButton}
-              disabled={isLoading}
-              loading={isLoading}
-            />
+            <ActionButton title={isLoading ? 'Creating Account...' : 'Register'} onPress={handleRegister} variant="primary" style={styles.registerButton} disabled={isLoading} loading={isLoading} />
 
             <View style={styles.loginSection}>
               <Text style={styles.loginPrompt}>Already have an account?</Text>
-              <TouchableOpacity
-                onPress={handleLogin}
-                disabled={isLoading}
-                style={styles.loginButton}
-              >
-                <Text style={styles.loginButtonText}>Sign In</Text>
-              </TouchableOpacity>
+              <TouchableOpacity onPress={handleLogin} disabled={isLoading}><Text style={styles.loginButtonText}>Sign In</Text></TouchableOpacity>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Custom Alert Modal */}
-      <CustomAlert
-        visible={alertConfig.visible}
-        type={alertConfig.type}
-        title={alertConfig.title}
-        message={alertConfig.message}
-        onConfirm={alertConfig.onConfirm}
-        onCancel={alertConfig.onCancel}
-        showCancel={alertConfig.showCancel}
-      />
+      <CustomAlert visible={alertConfig.visible} type={alertConfig.type} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} onCancel={alertConfig.onCancel} showCancel={alertConfig.showCancel} />
     </KeyboardAvoidingView>
   );
 };

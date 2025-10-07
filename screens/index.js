@@ -21,18 +21,16 @@ import {
 
 const { width: screenWidth } = Dimensions.get('window');
 
-// Custom SweetAlert-like Modal Component
+// ✅ Base API URL (Render Deployment)
+const API_BASE_URL = 'https://hdcpmss-mobile-1.onrender.com';
+
+// --- Custom Alert Component ---
 const CustomAlert = ({ visible, type, title, message, onConfirm, onCancel, showCancel = false }) => {
   const [scaleAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (visible) {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 150,
-        friction: 8,
-      }).start();
+      Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 150, friction: 8 }).start();
     } else {
       scaleAnim.setValue(0);
     }
@@ -40,16 +38,11 @@ const CustomAlert = ({ visible, type, title, message, onConfirm, onCancel, showC
 
   const getIconConfig = () => {
     switch (type) {
-      case 'success':
-        return { name: 'checkmark-circle', color: '#10B981', backgroundColor: '#ECFDF5' };
-      case 'error':
-        return { name: 'close-circle', color: '#EF4444', backgroundColor: '#FEF2F2' };
-      case 'warning':
-        return { name: 'warning', color: '#F59E0B', backgroundColor: '#FFFBEB' };
-      case 'info':
-        return { name: 'information-circle', color: '#3B82F6', backgroundColor: '#EFF6FF' };
-      default:
-        return { name: 'information-circle', color: '#6B7280', backgroundColor: '#F9FAFB' };
+      case 'success': return { name: 'checkmark-circle', color: '#10B981', backgroundColor: '#ECFDF5' };
+      case 'error': return { name: 'close-circle', color: '#EF4444', backgroundColor: '#FEF2F2' };
+      case 'warning': return { name: 'warning', color: '#F59E0B', backgroundColor: '#FFFBEB' };
+      case 'info': return { name: 'information-circle', color: '#3B82F6', backgroundColor: '#EFF6FF' };
+      default: return { name: 'information-circle', color: '#6B7280', backgroundColor: '#F9FAFB' };
     }
   };
 
@@ -83,6 +76,7 @@ const CustomAlert = ({ visible, type, title, message, onConfirm, onCancel, showC
   );
 };
 
+// --- Login Screen ---
 const LoginScreen = () => {
   const navigation = useNavigation();
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -113,9 +107,7 @@ const LoginScreen = () => {
     });
   };
 
-  const hideAlert = () => {
-    setAlertConfig(prev => ({ ...prev, visible: false }));
-  };
+  const hideAlert = () => setAlertConfig(prev => ({ ...prev, visible: false }));
 
   const handleInputChange = useCallback((field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -134,40 +126,36 @@ const LoginScreen = () => {
   };
 
   const handleLogin = async () => {
-  if (!validateForm()) {
-    showAlert({ type: 'error', title: 'Validation Error', message: 'Please fix the errors in the form.' });
-    return;
-  }
+    if (!validateForm()) {
+      showAlert({ type: 'error', title: 'Validation Error', message: 'Please fix the errors in the form.' });
+      return;
+    }
 
-  setIsLoading(true);
-  try {
-    const response = await axios.post(
-      'http://192.168.0.101:3000/api/users/login',
-      { email: formData.email.trim().toLowerCase(), password: formData.password },
-      { timeout: 10000, headers: { 'Content-Type': 'application/json' } }
-    );
+    setIsLoading(true);
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/api/users/login`,
+        { email: formData.email.trim().toLowerCase(), password: formData.password },
+        { timeout: 10000, headers: { 'Content-Type': 'application/json' } }
+      );
 
-    const { token, user } = response.data;
-    if (!token) throw new Error('No token received from server');
+      const { token, user } = response.data;
+      if (!token) throw new Error('No token received');
 
-    // Save token and user info
-    await AsyncStorage.setItem('token', token);
-    await AsyncStorage.setItem('userId', user.id);
-    await AsyncStorage.setItem('userEmail', user.email);
+      // Save token and user info
+      await AsyncStorage.setItem('token', token);
+      await AsyncStorage.setItem('userId', user.id);
+      await AsyncStorage.setItem('userEmail', user.email);
 
-    // ✅ Log the token to verify it is stored
-    const storedToken = await AsyncStorage.getItem('token');
-    console.log('Token in storage:', storedToken);  // <-- check if it prints
-
-    showAlert({
-      type: 'success',
-      title: 'Login Successful!',
-      message: 'Welcome back! Redirecting to your dashboard...',
-      onConfirm: () => {
-        hideAlert();
-        navigation.replace('HomeScreen');
-      },
-    });
+      showAlert({
+        type: 'success',
+        title: 'Login Successful!',
+        message: 'Welcome back! Redirecting to your dashboard...',
+        onConfirm: () => {
+          hideAlert();
+          navigation.replace('HomeScreen');
+        },
+      });
     } catch (error) {
       console.error('Login error:', error);
       const serverMessage = error.response?.data?.error || error.response?.data?.message;
@@ -199,7 +187,6 @@ const LoginScreen = () => {
   };
 
   const handleRegister = () => navigation.navigate('Register');
-
   const handleForgotPassword = () => showAlert({
     type: 'info',
     title: 'Forgot Password',
@@ -285,21 +272,8 @@ const LoginScreen = () => {
   );
 };
 
-// Enhanced InputField Component
-const InputField = ({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  secureTextEntry = false,
-  style,
-  keyboardType,
-  autoCapitalize,
-  autoCorrect,
-  error,
-  rightIcon,
-  maxLength,
-}) => (
+// --- Input Field ---
+const InputField = ({ label, value, onChangeText, placeholder, secureTextEntry = false, style, keyboardType, autoCapitalize, autoCorrect, error, rightIcon, maxLength }) => (
   <View style={[styles.inputWrapper, style]}>
     <Text style={styles.label}>{label}</Text>
     <View style={[styles.inputContainer, error && styles.inputError]}>
@@ -317,20 +291,12 @@ const InputField = ({
       />
       {rightIcon}
     </View>
-    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
-// Enhanced ActionButton Component
-const ActionButton = ({
-  title,
-  onPress,
-  style,
-  textStyle,
-  variant = 'primary',
-  disabled = false,
-  loading = false,
-}) => {
+// --- Action Button ---
+const ActionButton = ({ title, onPress, style, textStyle, variant = 'primary', disabled = false, loading = false }) => {
   const buttonStyle = [
     variant === 'primary' ? styles.primaryButton : styles.secondaryButton,
     disabled && styles.buttonDisabled,
@@ -343,22 +309,13 @@ const ActionButton = ({
   ];
 
   return (
-    <TouchableOpacity
-      style={buttonStyle}
-      onPress={onPress}
-      activeOpacity={disabled ? 1 : 0.7}
-      disabled={disabled}
-    >
-      {loading ? (
-        <ActivityIndicator size="small" color="#fff" />
-      ) : (
-        <Text style={buttonTextStyle}>{title}</Text>
-      )}
+    <TouchableOpacity style={buttonStyle} onPress={onPress} activeOpacity={disabled ? 1 : 0.7} disabled={disabled}>
+      {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={buttonTextStyle}>{title}</Text>}
     </TouchableOpacity>
   );
 };
 
-// Styles (same as your original)
+// --- Styles (same as before) ---
 const styles = StyleSheet.create({
   keyboardView: { flex: 1, backgroundColor: '#f8f9fa' },
   scrollContainer: { flexGrow: 1, paddingBottom: 20 },
