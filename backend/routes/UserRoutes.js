@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const router = express.Router();
 const User = require("../models/User");
-const sendVerificationEmail = require("../mailer"); // ✅ updated import
+const sendVerificationCode = require("../mailer"); // ✅ now sends code, not link
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -16,7 +16,7 @@ const authMiddleware = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded; // { id, email }
+    req.user = decoded;
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid token" });
@@ -37,8 +37,8 @@ router.post("/register", async (req, res) => {
       return res.status(400).json({ error: "Email already registered" });
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    const codeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 mins
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const codeExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     const newUser = new User({
       username,
@@ -52,19 +52,16 @@ router.post("/register", async (req, res) => {
 
     await newUser.save();
 
-    // ✅ Create verification link
-    const verificationLink = `${process.env.FRONTEND_URL}/verify?userId=${newUser._id}&code=${verificationCode}`;
-
-    // ✅ Send email using Resend API
+    // ✅ Send verification code
     try {
-      await sendVerificationEmail(email, verificationLink);
+      await sendVerificationCode(email, verificationCode);
     } catch (emailErr) {
       console.error("❌ Email sending failed:", emailErr);
-      return res.status(500).json({ error: "Failed to send verification email" });
+      return res.status(500).json({ error: "Failed to send verification code" });
     }
 
     res.status(201).json({
-      message: "Verification email sent successfully.",
+      message: "Verification code sent to your email",
       userId: newUser._id,
     });
   } catch (err) {
@@ -74,27 +71,27 @@ router.post("/register", async (req, res) => {
 });
 
 // -----------------------------
-// VERIFY EMAIL (User clicks link)
+// VERIFY EMAIL (OTP code)
 // -----------------------------
-router.get("/verify", async (req, res) => {
-  const { userId, code } = req.query;
+router.post("/verify", async (req, res) => {
+  const { userId, code } = req.body;
 
   try {
     const user = await User.findById(userId);
-    if (!user) return res.status(404).send("User not found");
-    if (user.isVerified) return res.status(400).send("User already verified");
-    if (user.verificationCode !== code) return res.status(400).send("Invalid code");
-    if (user.codeExpires < Date.now()) return res.status(400).send("Code expired");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    if (user.isVerified) return res.status(400).json({ message: "User already verified" });
+    if (user.verificationCode !== code) return res.status(400).json({ message: "Invalid code" });
+    if (user.codeExpires < Date.now()) return res.status(400).json({ message: "Code expired" });
 
     user.isVerified = true;
     user.verificationCode = null;
     user.codeExpires = null;
     await user.save();
 
-    res.send("✅ Email verified successfully. You may now log in!");
+    res.status(200).json({ message: "User verified successfully" });
   } catch (err) {
-    console.error("Verification Error:", err);
-    res.status(500).send("Verification failed");
+    console.error("Verification Error:", err.message);
+    res.status(500).json({ message: "Verification failed" });
   }
 });
 

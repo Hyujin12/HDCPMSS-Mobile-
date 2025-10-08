@@ -2,29 +2,28 @@
 const { Resend } = require("resend");
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-async function sendVerificationEmail(email, verificationLink) {
+async function sendVerificationCode(email, code) {
   try {
     const response = await resend.emails.send({
-      from: "Halili Dental <onboarding@resend.dev>", // change to verified domain later
+      from: "Halili Dental <onboarding@resend.dev>",
       to: email,
-      subject: "Verify your Halili Dental account",
+      subject: "Your Halili Dental Verification Code",
       html: `
         <div style="font-family:sans-serif;padding:20px;">
           <h2>Welcome to Halili Dental Clinic</h2>
-          <p>Click below to verify your account:</p>
-          <a href="${verificationLink}" 
-             style="display:inline-block;background:#007bff;color:#fff;padding:10px 20px;
-             border-radius:5px;text-decoration:none;">Verify Email</a>
+          <p>Here is your verification code:</p>
+          <h1 style="color:#007bff;">${code}</h1>
+          <p>This code will expire in 10 minutes.</p>
         </div>
       `,
     });
 
-    console.log("✅ Email sent:", response);
+    console.log("✅ Verification code sent:", response);
     return response;
   } catch (error) {
-    console.error("❌ Failed to send email:", error);
+    console.error("❌ Failed to send verification code:", error);
     throw error;
   }
 }
 
-module.exports = sendVerificationEmail;
+module.exports = sendVerificationCode;
