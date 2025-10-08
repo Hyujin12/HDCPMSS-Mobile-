@@ -13,6 +13,7 @@ import AppointmentDetailsScreen from '../screens/AppointmentDetailsScreen';
 import BookAppointmentScreen from '../screens/BookAppointmentScreen';
 import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import Receipt from '../screens/Reciept';
 import ServicesScreen from '../screens/ServicesScreen';
 
 const Stack = createStackNavigator();
@@ -37,6 +38,7 @@ export default function Navigation() {
         <Stack.Screen name="Services" component={ServicesScreen} />
         <Stack.Screen name="History" component={HistoryScreen} />
         <Stack.Screen name="AppointmentDetails" component={AppointmentDetailsScreen} />
+        <Stack.Screen name="Receipt" component={Receipt} />
       </Stack.Navigator>
     </NavigationContainer>
   );

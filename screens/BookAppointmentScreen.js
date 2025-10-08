@@ -17,6 +17,11 @@ import {
   View,
 } from "react-native";
 
+// --------------------
+// Backend URL
+// --------------------
+const BASE_URL = "https://hdcpmss-mobile-1.onrender.com";
+
 const services = [
   { title: "Dental Checkup", image: require("../assets/images/dental check up.jpg"), description: "A dental checkup is a routine examination that helps identify any potential dental issues early on." },
   { title: "Dental Extraction", image: require("../assets/images/dental extraction.jpg"), description: "Dental extraction is a surgical procedure to remove a tooth from the mouth." },
@@ -37,8 +42,8 @@ const ServicesScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [description, setDescription] = useState("");
 
-  // Logged-in user info
-  const [user, setUser] = useState({ username: "", email: "" });
+  // User profile including _id
+  const [user, setUser] = useState({ id: "", username: "", email: "" });
 
   // Date & time pickers
   const [date, setDate] = useState(new Date());
@@ -49,28 +54,38 @@ const ServicesScreen = () => {
     fetchUser();
   }, []);
 
+  // --------------------
+  // Fetch logged-in user
+  // --------------------
   const fetchUser = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return;
 
-      const res = await axios.get("http://192.168.0.101:3000/api/users/profile", {
+      const res = await axios.get(`${BASE_URL}/api/users/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setUser({ username: res.data.username, email: res.data.email });
+      setUser({ id: res.data._id, username: res.data.username, email: res.data.email });
       setUsername(res.data.username);
       setEmail(res.data.email);
     } catch (err) {
       console.error("Failed to fetch user:", err.message);
+      Alert.alert("Error", "Failed to fetch user profile. Make sure you are logged in.");
     }
   };
 
+  // --------------------
+  // Open modal
+  // --------------------
   const openModal = (service) => {
     setSelectedService(service);
     setModalVisible(true);
   };
 
+  // --------------------
+  // Submit booking
+  // --------------------
   const submitBooking = async () => {
     if (!phoneNumber) {
       Alert.alert("Error", "Please fill the phone number.");
@@ -79,31 +94,40 @@ const ServicesScreen = () => {
 
     try {
       const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "You must be logged in to book a service.");
+        return;
+      }
 
-      await axios.post(
-        "http://192.168.0.101:3000/api/booked-services",
-        {
-          serviceName: selectedService.title,
-          fullname: username,
-          email,
-          phone: phoneNumber,
-          description,
-          date: date.toISOString().split("T")[0],
-          time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        },
-        { headers: { Authorization: token ? `Bearer ${token}` : "" } }
-      );
+      const bookingData = {
+        userId: user.id, // ✅ send userId to backend
+        serviceName: selectedService.title,
+        fullname: username,
+        email,
+        phone: phoneNumber,
+        description,
+        date: date.toISOString().split("T")[0],
+        time: date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+
+      await axios.post(`${BASE_URL}/api/booked-services`, bookingData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       Alert.alert("Success", "Your service has been booked!");
       setModalVisible(false);
       setPhoneNumber("");
       setDescription("");
+      setDate(new Date());
     } catch (err) {
       console.error("Booking Error:", err.response?.data || err.message);
       Alert.alert("Error", "Failed to book service.");
     }
   };
 
+  // --------------------
+  // Date & Time Picker handlers
+  // --------------------
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === "ios");
@@ -116,6 +140,9 @@ const ServicesScreen = () => {
     setDate(currentTime);
   };
 
+  // --------------------
+  // Render service card
+  // --------------------
   const renderItem = ({ item }) => (
     <View style={styles.card}>
       <Image source={item.image} style={styles.image} />
@@ -142,26 +169,9 @@ const ServicesScreen = () => {
         <ScrollView contentContainerStyle={styles.modalContainer}>
           <Text style={styles.modalTitle}>Book: {selectedService?.title}</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Full Name"
-            value={username}
-            editable={false} // readonly
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            value={email}
-            editable={false} // readonly
-            keyboardType="email-address"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Phone Number"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-          />
+          <TextInput style={styles.input} placeholder="Full Name" value={username} editable={false} />
+          <TextInput style={styles.input} placeholder="Email" value={email} editable={false} keyboardType="email-address" />
+          <TextInput style={styles.input} placeholder="Phone Number" value={phoneNumber} onChangeText={setPhoneNumber} keyboardType="phone-pad" />
 
           {/* Date Picker */}
           <TouchableOpacity style={styles.input} onPress={() => setShowDatePicker(true)}>
@@ -173,20 +183,13 @@ const ServicesScreen = () => {
 
           {/* Time Picker */}
           <TouchableOpacity style={styles.input} onPress={() => setShowTimePicker(true)}>
-            <Text>
-              ⏰ Time: {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </Text>
+            <Text>⏰ Time: {date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Text>
           </TouchableOpacity>
           {showTimePicker && (
             <DateTimePicker value={date} mode="time" is24Hour={false} display="clock" onChange={onChangeTime} />
           )}
 
-          <TextInput
-            style={styles.input}
-            placeholder="Additional Notes (optional)"
-            value={description}
-            onChangeText={setDescription}
-          />
+          <TextInput style={styles.input} placeholder="Additional Notes (optional)" value={description} onChangeText={setDescription} />
 
           <Button title="Submit Booking" onPress={submitBooking} />
           <Button title="Cancel" color="red" onPress={() => setModalVisible(false)} />

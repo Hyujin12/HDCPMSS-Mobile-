@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useNavigation } from "@react-navigation/native";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import {
@@ -25,11 +26,14 @@ export default function AllAppointmentsScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [description, setDescription] = useState("");
   const [phone, setPhone] = useState("");
-  const [user, setUser] = useState({ fullname: "", email: "" });
 
-  const API_URL = "http://192.168.0.101:3000/api/booked-services";
+  const navigation = useNavigation();
 
-  // Fetch logged-in user info
+  const BASE_URL = "https://hdcpmss-mobile-1.onrender.com";
+  const API_URL = `${BASE_URL}/api/booked-services`;
+  const USER_URL = `${BASE_URL}/api/users/profile`;
+
+  // Fetch logged-in user info and bookings
   useEffect(() => {
     const fetchUserAndBookings = async () => {
       try {
@@ -39,15 +43,14 @@ export default function AllAppointmentsScreen() {
           return;
         }
 
-        const userRes = await axios.get(
-          "http://192.168.0.101:3000/api/users/profile",
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setUser({ fullname: userRes.data.username, email: userRes.data.email });
+        const userRes = await axios.get(USER_URL, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const bookingsRes = await axios.get(API_URL, {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         setBookings(bookingsRes.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -63,7 +66,7 @@ export default function AllAppointmentsScreen() {
   const renderStatus = (status) => {
     let color = "#fbbf24";
     if (status === "accepted") color = "#22c55e";
-    else if (status === "completed") color = "#3b82f6";
+    else if (status === "Completed") color = "#3b82f6";
     else if (status === "cancelled") color = "#ef4444";
 
     return (
@@ -79,7 +82,6 @@ export default function AllAppointmentsScreen() {
     setPhone(booking.phone || "");
     setDescription(booking.description || "");
 
-    // Parse time string "HH:MM AM/PM" safely
     if (booking.time) {
       const [timePart, ampm] = booking.time.split(" ");
       const [hoursStr, minutesStr] = timePart.split(":");
@@ -102,11 +104,10 @@ export default function AllAppointmentsScreen() {
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Unauthorized", "Please log in again.");
 
-      // Format time as HH:MM AM/PM
       let hours = selectedTime.getHours();
       const minutes = selectedTime.getMinutes();
       const ampm = hours >= 12 ? "PM" : "AM";
-      hours = hours % 12 || 12; // convert 0 to 12
+      hours = hours % 12 || 12;
       const minutesStr = minutes < 10 ? "0" + minutes : minutes;
       const timeString = `${hours}:${minutesStr} ${ampm}`;
 
@@ -187,13 +188,21 @@ export default function AllAppointmentsScreen() {
             <Text style={styles.title}>{item.serviceName}</Text>
             <Text style={styles.detail}>📅 Date: {item.date}</Text>
             <Text style={styles.detail}>⏰ Time: {item.time}</Text>
-            <Text style={styles.detail}>👤 Patient: {user.fullname}</Text>
+            <Text style={styles.detail}>👤 Patient: {item.fullname}</Text>
             <Text style={styles.detail}>📞 {item.phone}</Text>
-            <Text style={styles.detail}>✉️ {user.email}</Text>
+            <Text style={styles.detail}>✉️ {item.email}</Text>
             <Text style={styles.detail}>📝 {item.description || "No notes"}</Text>
             {renderStatus(item.status)}
 
-            {item.status !== "cancelled" && (
+            {/* ✅ Buttons based on status */}
+            {item.status === "Completed" ? (
+              <TouchableOpacity
+                style={styles.receiptBtn}
+                onPress={() => navigation.navigate("Receipt", { booking: item })}
+              >
+                <Text style={styles.btnText}>View Receipt</Text>
+              </TouchableOpacity>
+            ) : item.status !== "cancelled" ? (
               <View style={styles.actions}>
                 <TouchableOpacity style={styles.editBtn} onPress={() => handleEdit(item)}>
                   <Text style={styles.btnText}>Edit</Text>
@@ -202,7 +211,7 @@ export default function AllAppointmentsScreen() {
                   <Text style={styles.btnText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            )}
+            ) : null}
           </View>
         )}
       />
@@ -213,8 +222,8 @@ export default function AllAppointmentsScreen() {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Edit Appointment</Text>
 
-            <TextInput style={styles.input} value={user.fullname} editable={false} />
-            <TextInput style={styles.input} value={user.email} editable={false} keyboardType="email-address" />
+            <TextInput style={styles.input} value={selectedBooking?.fullname} editable={false} />
+            <TextInput style={styles.input} value={selectedBooking?.email} editable={false} keyboardType="email-address" />
 
             <Calendar
               onDayPress={(day) => setSelectedDate(day.dateString)}
@@ -280,6 +289,7 @@ const styles = StyleSheet.create({
   actions: { flexDirection: "row", marginTop: 10, gap: 10 },
   editBtn: { backgroundColor: "#3b82f6", padding: 8, borderRadius: 6, flex: 1 },
   cancelBtn: { backgroundColor: "#ef4444", padding: 8, borderRadius: 6, flex: 1 },
+  receiptBtn: { backgroundColor: "#0ea5e9", padding: 10, borderRadius: 8, marginTop: 10 },
   btnText: { color: "#fff", textAlign: "center", fontWeight: "600" },
   empty: { flex: 1, justifyContent: "center", alignItems: "center", padding: 40 },
   modalOverlay: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },

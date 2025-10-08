@@ -18,25 +18,25 @@ const VerifyScreen = () => {
   const { userId } = route.params;
 
   const handleVerify = async () => {
-    if (!code || code.length !== 6) {
-      Alert.alert('Invalid Code', 'Please enter a valid 6-digit code.');
-      return;
-    }
+  if (!code || code.length !== 6) {
+    Alert.alert('Invalid Code', 'Please enter a valid 6-digit code.');
+    return;
+  }
 
-    try {
-      await axios.post('https://hdcpmss-mobile-1.onrender.com/api/users/verify', {
-  userId,
-  code,
-});
+  try {
+    const res = await axios.post('https://hdcpmss-mobile-1.onrender.com/api/users/verify', {
+      userId,
+      code,
+    });
 
+    Alert.alert('Success', res.data.message);
+    navigation.navigate('Login');
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    Alert.alert('Error', error.response?.data?.message || 'Verification failed');
+  }
+};
 
-      Alert.alert('Success', res.data.message);
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error(error.response?.data || error.message);
-      Alert.alert('Error', error.response?.data?.message || 'Verification failed');
-    }
-  };
 
   return (
     <View style={styles.container}>

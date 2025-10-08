@@ -8,11 +8,8 @@ const bookedServiceRoutes = require("./routes/BookedServiceRoutes");
 const app = express();
 
 // Middleware
-app.use(cors({
-  origin: '192.168.0.101:8081',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(cors());
+
 
 app.use(express.json());
 
