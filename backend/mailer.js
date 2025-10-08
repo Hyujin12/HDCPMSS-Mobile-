@@ -1,28 +1,13 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-const sendVerificationEmail = async (email, code) => {
-  const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  });
-
-  const mailOptions = {
-    from: `"Halili Dental Clinic" <${process.env.EMAIL_USER}>`,
+async function sendVerificationEmail(email, link) {
+  await resend.emails.send({
+    from: 'Halili Dental <noreply@halilidental.com>',
     to: email,
-    subject: 'Email Verification Code',
-    html: `<p>Your verification code is: <strong>${code}</strong></p>`,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log('✅ Email sent:', info.response);
-  } catch (error) {
-    console.error('❌ Email send failed:', error.message);
-    throw error;
-  }
-};
+    subject: 'Verify your account',
+    html: `<p>Click <a href="${link}">here</a> to verify your email.</p>`,
+  });
+}
 
 module.exports = sendVerificationEmail;

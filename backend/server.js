@@ -8,7 +8,12 @@ const bookedServiceRoutes = require("./routes/BookedServiceRoutes");
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: 'exp://192.168.0.101:8081', // or list your Expo local IP if needed, e.g. "exp://192.168.0.101:8081"
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 
 // Routes

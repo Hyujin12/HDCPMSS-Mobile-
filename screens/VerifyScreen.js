@@ -24,10 +24,11 @@ const VerifyScreen = () => {
     }
 
     try {
-      const res = await axios.post('http://192.168.0.101:3000/api/users/verify', {
-        userId,
-        code,
-      });
+      await axios.post('https://hdcpmss-mobile-1.onrender.com/api/users/verify', {
+  userId,
+  code,
+});
+
 
       Alert.alert('Success', res.data.message);
       navigation.navigate('Login');
