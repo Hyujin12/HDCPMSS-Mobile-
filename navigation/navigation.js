@@ -15,6 +15,7 @@ import HistoryScreen from '../screens/HistoryScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import Receipt from '../screens/Reciept';
 import ServicesScreen from '../screens/ServicesScreen';
+import TeethCareOnboarding from '../screens/Start';
 
 const Stack = createStackNavigator();
 
@@ -22,9 +23,10 @@ export default function Navigation() {
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Register"
+        initialRouteName="Start"
         screenOptions={{ headerShown: false }}
       >
+        <Stack.Screen name="Start" component={TeethCareOnboarding} />
         <Stack.Screen name="Register" component={RegScreen} />
         <Stack.Screen name="Login" component={LogInScreen} />
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
